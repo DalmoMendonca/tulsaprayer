@@ -1,0 +1,7 @@
+node_modules
+tmp
+.netlify
+.env
+.env.*
+!.env.example
+data/prayers.json.tmp

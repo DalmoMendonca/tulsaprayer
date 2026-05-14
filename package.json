@@ -1,0 +1,14 @@
+{
+  "name": "tulsaprayer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-page 3D Tulsa prayer map with moderated prayer submissions.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build:sheet": "node scripts/create-storage-sheet.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

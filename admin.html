@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tulsa Prayer Map Admin</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23081315'/%3E%3Cpath d='M32 12v40M12 32h40' stroke='%23e7bb55' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="admin-card">
+        <header>
+          <p class="admin-kicker">Tulsa Prayer Map</p>
+          <h1>Admin</h1>
+        </header>
+
+        <form id="loginForm" class="admin-login">
+          <label for="adminPassword">Password</label>
+          <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Enter admin password" />
+          <button type="submit">Unlock admin tools</button>
+        </form>
+
+        <section id="adminTools" class="admin-tools" hidden>
+          <div class="admin-toolbar">
+            <strong id="adminSummary">0 prayers</strong>
+            <button id="refreshAdmin" type="button">Refresh</button>
+          </div>
+          <div id="adminList" class="admin-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./admin.js"></script>
+  </body>
+</html>
