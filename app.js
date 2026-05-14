@@ -24,6 +24,15 @@ const formStatus = document.querySelector("#formStatus");
 const tiltButton = document.querySelector("#tiltButton");
 const resetButton = document.querySelector("#resetButton");
 const hoverLabel = document.querySelector("#hoverLabel");
+const openAllPrayers = document.querySelector("#openAllPrayers");
+const closePanel = document.querySelector("#closePanel");
+const reopenPanel = document.querySelector("#reopenPanel");
+const expandAreaWall = document.querySelector("#expandAreaWall");
+const prayerOverlay = document.querySelector("#prayerOverlay");
+const overlayKicker = document.querySelector("#overlayKicker");
+const overlayTitle = document.querySelector("#overlayTitle");
+const overlayContent = document.querySelector("#overlayContent");
+const closeOverlay = document.querySelector("#closeOverlay");
 
 const state = {
   areas: [],
@@ -44,8 +53,12 @@ const state = {
   recordingStartedAt: 0,
   recordedDurationSeconds: 0,
   recordingTimer: null,
+  discardingRecording: false,
   isSubmitting: false,
   pointerDown: null,
+  panelDismissed: false,
+  activeStreams: [],
+  mapOffsetZ: 0,
 };
 
 const scene = new THREE.Scene();
@@ -120,6 +133,17 @@ recordButton.addEventListener("click", toggleRecording);
 discardRecording.addEventListener("click", clearRecording);
 tiltButton.addEventListener("click", cycleTilt);
 resetButton.addEventListener("click", resetView);
+openAllPrayers.addEventListener("click", openAllPrayerWall);
+closePanel.addEventListener("click", dismissPanel);
+reopenPanel.addEventListener("click", showPanel);
+expandAreaWall.addEventListener("click", openSelectedPrayerWall);
+closeOverlay.addEventListener("click", closePrayerOverlay);
+prayerOverlay.addEventListener("click", (event) => {
+  if (event.target === prayerOverlay) closePrayerOverlay();
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closePrayerOverlay();
+});
 
 async function init() {
   const geojson = await fetchJson(dataUrl);
@@ -307,6 +331,7 @@ function makeTextSprite(text) {
 function selectArea(id, focusForm = true, focusMap = true) {
   const area = getArea(id);
   if (!area) return;
+  showPanel();
   state.selectedId = id;
   const prayers = getPrayers(id);
 
@@ -322,7 +347,7 @@ function selectArea(id, focusForm = true, focusMap = true) {
 
   if (focusMap) {
     const centroid = projectedCentroid(area.geometry);
-    animateViewTo(new THREE.Vector3(centroid.x + 2.4, 0, centroid.z), 760);
+    animateViewTo(new THREE.Vector3(centroid.x + 2.4, 0, centroid.z + state.mapOffsetZ), 760);
   }
   if (focusForm) prayerText.focus({ preventScroll: true });
 }
@@ -373,6 +398,11 @@ function updateAreaColors() {
 }
 
 function onPointerMove(event) {
+  const hitAreaId = getHitAreaId(event);
+  setHoveredArea(hitAreaId, event.clientX, event.clientY);
+}
+
+function getHitAreaId(event) {
   const bounds = canvas.getBoundingClientRect();
   pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
   pointer.y = -(((event.clientY - bounds.top) / bounds.height) * 2 - 1);
@@ -380,23 +410,23 @@ function onPointerMove(event) {
 
   const meshes = [...state.meshes.values()].flatMap((group) => group.children.filter((child) => child.isMesh));
   const hit = raycaster.intersectObjects(meshes, false)[0];
-  setHoveredArea(hit?.object.userData.areaId || null, event.clientX, event.clientY);
+  return hit?.object.userData.areaId || null;
 }
 
 function onPointerDown(event) {
   state.pointerDown = {
     x: event.clientX,
     y: event.clientY,
-    areaId: state.hoveredId,
+    areaId: getHitAreaId(event),
   };
 }
 
 function onPointerUp(event) {
-  if (!state.pointerDown?.areaId) return;
+  if (!state.pointerDown) return;
   const moved = Math.hypot(event.clientX - state.pointerDown.x, event.clientY - state.pointerDown.y);
   const areaId = state.pointerDown.areaId;
   state.pointerDown = null;
-  if (moved < 8) selectArea(areaId);
+  if (areaId && moved < 8) selectArea(areaId);
 }
 
 function setHoveredArea(id, x = 0, y = 0) {
@@ -470,6 +500,8 @@ async function toggleRecording() {
   clearRecording();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.activeStreams = [stream];
+    state.discardingRecording = false;
     const mimeType = pickAudioMimeType();
     state.recordedChunks = [];
     state.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -477,6 +509,10 @@ async function toggleRecording() {
       if (event.data.size) state.recordedChunks.push(event.data);
     });
     state.mediaRecorder.addEventListener("stop", () => finishRecording(stream));
+    state.mediaRecorder.addEventListener("error", () => {
+      stopStream(stream);
+      setFormStatus("Recording failed. Please try again.", true);
+    });
     state.mediaRecorder.start();
     state.recordingStartedAt = Date.now();
     recordButton.classList.add("is-recording");
@@ -487,8 +523,8 @@ async function toggleRecording() {
     updateRecordingTimer();
     state.recordingTimer = window.setInterval(updateRecordingTimer, 500);
     if (window.lucide) window.lucide.createIcons();
-  } catch {
-    setFormStatus("Microphone access was not granted.", true);
+  } catch (error) {
+    setFormStatus(microphoneErrorMessage(error), true);
   }
 }
 
@@ -497,12 +533,23 @@ function stopRecording() {
 }
 
 function finishRecording(stream) {
-  stream.getTracks().forEach((track) => track.stop());
+  stopStream(stream);
+  state.activeStreams = state.activeStreams.filter((activeStream) => activeStream !== stream);
   window.clearInterval(state.recordingTimer);
   state.recordingTimer = null;
+  if (state.discardingRecording) {
+    state.discardingRecording = false;
+    state.mediaRecorder = null;
+    return;
+  }
   state.recordedDurationSeconds = Math.max(1, Math.ceil((Date.now() - state.recordingStartedAt) / 1000));
   const type = state.mediaRecorder?.mimeType || "audio/webm";
   state.recordedBlob = new Blob(state.recordedChunks, { type });
+  if (!state.recordedBlob.size) {
+    clearRecording();
+    setFormStatus("No audio was captured. Please try recording again.", true);
+    return;
+  }
   recordButton.classList.remove("is-recording");
   recordButton.innerHTML = `<i data-lucide="mic" aria-hidden="true"></i> Re-record`;
   discardRecording.hidden = false;
@@ -513,11 +560,17 @@ function finishRecording(stream) {
 }
 
 function clearRecording() {
-  if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+  if (state.mediaRecorder?.state === "recording") {
+    state.discardingRecording = true;
+    state.mediaRecorder.stop();
+  }
+  state.activeStreams.forEach(stopStream);
+  state.activeStreams = [];
   window.clearInterval(state.recordingTimer);
   state.recordingTimer = null;
   state.recordedChunks = [];
   state.recordedBlob = null;
+  if (state.mediaRecorder?.state !== "recording") state.mediaRecorder = null;
   state.recordedDurationSeconds = 0;
   recordDuration.textContent = "0:00";
   recordButton.classList.remove("is-recording");
@@ -555,7 +608,18 @@ function blobToBase64(blob) {
 }
 
 function pickAudioMimeType() {
-  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
+  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((type) => MediaRecorder.isTypeSupported(type));
+}
+
+function stopStream(stream) {
+  stream?.getTracks?.().forEach((track) => track.stop());
+}
+
+function microphoneErrorMessage(error) {
+  if (error?.name === "NotAllowedError" || error?.name === "SecurityError") return "Microphone access was not granted.";
+  if (error?.name === "NotFoundError") return "No microphone was found on this device.";
+  if (error?.name === "NotReadableError") return "The microphone is already in use by another app.";
+  return "Microphone recording is not available in this browser.";
 }
 
 function setFormStatus(message, isError = false) {
@@ -572,22 +636,81 @@ function renderPrayerFeed(prayers) {
     prayerFeed.innerHTML = `<div class="empty-state">No prayers registered for this area yet.</div>`;
     return;
   }
-  prayerFeed.innerHTML = prayers
-    .map(
-      (prayer) => `
-      <article class="prayer-entry">
-        <strong>${escapeHtml(prayer.name)}</strong>
-        <p>${escapeHtml(prayer.text)}</p>
-        ${
-          prayer.audioUrl
-            ? `<audio controls preload="none" src="${escapeAttribute(prayer.audioUrl)}"></audio>`
-            : ""
-        }
-        <time datetime="${prayer.createdAt}">${formatDate(prayer.createdAt)}</time>
-      </article>
-    `,
-    )
-    .join("");
+  prayerFeed.innerHTML = prayers.map(renderPrayerEntry).join("");
+}
+
+function dismissPanel() {
+  state.panelDismissed = true;
+  document.body.classList.add("panel-dismissed");
+  reopenPanel.hidden = false;
+}
+
+function showPanel() {
+  state.panelDismissed = false;
+  document.body.classList.remove("panel-dismissed");
+  reopenPanel.hidden = true;
+}
+
+function openSelectedPrayerWall() {
+  const area = getArea(state.selectedId);
+  if (!area) return;
+  overlayKicker.textContent = "Neighborhood Prayer Wall";
+  overlayTitle.textContent = area.name;
+  overlayContent.innerHTML = renderAreaPrayerSection(area, true);
+  openPrayerOverlay();
+}
+
+function openAllPrayerWall() {
+  overlayKicker.textContent = "Tulsa Prayer Wall";
+  overlayTitle.textContent = "All Prayers";
+  const activeAreas = state.areas.filter((area) => getPrayers(area.id).length > 0);
+  overlayContent.innerHTML = activeAreas.length
+    ? activeAreas.map((area) => renderAreaPrayerSection(area, false)).join("")
+    : `<div class="empty-state overlay-empty">No prayers registered yet.</div>`;
+  openPrayerOverlay();
+}
+
+function renderAreaPrayerSection(area, selectedOnly) {
+  const prayers = getPrayers(area.id);
+  const entries = prayers.length
+    ? prayers.map(renderPrayerEntry).join("")
+    : `<div class="empty-state">No prayers registered for this area yet.</div>`;
+  return `
+    <section class="overlay-area ${selectedOnly ? "is-selected" : ""}">
+      <header>
+        <div>
+          <span>Area ${area.mapId}</span>
+          <h3>${escapeHtml(area.name)}</h3>
+        </div>
+        <strong>${formatPrayerCount(prayers.length)}</strong>
+      </header>
+      <div class="overlay-prayers">${entries}</div>
+    </section>
+  `;
+}
+
+function renderPrayerEntry(prayer) {
+  return `
+    <article class="prayer-entry">
+      <strong>${escapeHtml(prayer.name)}</strong>
+      <p>${escapeHtml(prayer.text)}</p>
+      ${prayer.audioUrl ? `<audio controls preload="none" src="${escapeAttribute(prayer.audioUrl)}"></audio>` : ""}
+      <time datetime="${prayer.createdAt}">${formatDate(prayer.createdAt)}</time>
+    </article>
+  `;
+}
+
+function openPrayerOverlay() {
+  prayerOverlay.hidden = false;
+  document.body.classList.add("overlay-open");
+  closeOverlay.focus({ preventScroll: true });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closePrayerOverlay() {
+  if (prayerOverlay.hidden) return;
+  prayerOverlay.hidden = true;
+  document.body.classList.remove("overlay-open");
 }
 
 async function hydratePrayers() {
@@ -732,9 +855,9 @@ function cycleTilt() {
     { position: [5.2, 21, 15], zoom: 0.68, target: [5.2, 0, 0.45] },
   ];
   const view = views[state.tiltIndex];
-  camera.position.set(...view.position);
+  camera.position.set(view.position[0], view.position[1], view.position[2] + state.mapOffsetZ);
   camera.zoom = view.zoom;
-  controls.target.set(...view.target);
+  controls.target.set(view.target[0], view.target[1], view.target[2] + state.mapOffsetZ);
   clampControlsTarget();
   camera.updateProjectionMatrix();
   controls.update();
@@ -742,8 +865,8 @@ function cycleTilt() {
 
 function resetView() {
   state.tiltIndex = 0;
-  controls.target.set(5.2, 0, 0.35);
-  camera.position.set(5.2, 24, 12);
+  controls.target.set(5.2, 0, 0.35 + state.mapOffsetZ);
+  camera.position.set(5.2, 24, 12 + state.mapOffsetZ);
   camera.zoom = 0.7;
   clampControlsTarget();
   camera.updateProjectionMatrix();
@@ -758,8 +881,14 @@ function resize() {
   const isMobile = width < 720;
   const frustum = isMobile ? 20.5 : 10.8;
   const mobileMapLift = isMobile ? -10.5 : 0;
+  const offsetDelta = mobileMapLift - state.mapOffsetZ;
+  state.mapOffsetZ = mobileMapLift;
   mapGroup.position.z = mobileMapLift;
   pinGroup.position.z = mobileMapLift;
+  if (offsetDelta) {
+    controls.target.z += offsetDelta;
+    camera.position.z += offsetDelta;
+  }
   camera.left = -frustum * aspect;
   camera.right = frustum * aspect;
   camera.top = frustum;
@@ -782,8 +911,7 @@ function animate() {
 }
 
 function clampControlsTarget() {
-  const isMobile = window.innerWidth < 720;
-  const zOffset = isMobile ? -10.5 : 0;
+  const zOffset = state.mapOffsetZ;
   const min = { x: -8.5, y: -0.05, z: -9.5 + zOffset };
   const max = { x: 10.5, y: 0.05, z: 8.8 + zOffset };
   const clamped = new THREE.Vector3(

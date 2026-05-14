@@ -29,21 +29,33 @@
           </div>
         </div>
         <div class="header-stats" aria-live="polite">
-          <div>
+          <button id="openAllPrayers" class="stat-card" type="button" aria-label="Open all prayers">
             <strong id="totalPrayers">0</strong>
             <span>Prayers</span>
-          </div>
-          <div>
+          </button>
+          <div class="stat-card">
             <strong id="totalAreas">0</strong>
             <span>Areas</span>
           </div>
         </div>
       </header>
 
+      <button id="reopenPanel" class="reopen-panel" type="button" hidden>
+        <i data-lucide="panel-right-open" aria-hidden="true"></i>
+        Prayer panel
+      </button>
+
       <aside class="detail-panel" aria-label="Prayer registration">
         <section class="selected-summary">
-          <p id="selectedMeta">NSA</p>
-          <h2 id="selectedName">Loading Tulsa...</h2>
+          <div class="panel-title-row">
+            <div>
+              <p id="selectedMeta">NSA</p>
+              <h2 id="selectedName">Loading Tulsa...</h2>
+            </div>
+            <button id="closePanel" class="icon-button close-panel" type="button" title="Dismiss panel" aria-label="Dismiss panel">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </div>
           <div class="metric-grid" aria-label="Selected area metrics">
             <div>
             <span>Conditions</span>
@@ -91,6 +103,7 @@
         <section class="prayer-wall">
           <div class="wall-header">
             <span>Prayer Wall</span>
+            <button id="expandAreaWall" class="text-button" type="button">Expand</button>
           </div>
           <div id="prayerFeed" class="feed-list"></div>
         </section>
@@ -104,6 +117,21 @@
           <i data-lucide="locate-fixed" aria-hidden="true"></i>
         </button>
       </div>
+
+      <section id="prayerOverlay" class="prayer-overlay" aria-modal="true" role="dialog" aria-labelledby="overlayTitle" hidden>
+        <div class="overlay-shell">
+          <header class="overlay-header">
+            <div>
+              <p id="overlayKicker">Prayer Wall</p>
+              <h2 id="overlayTitle">Prayers</h2>
+            </div>
+            <button id="closeOverlay" class="icon-button" type="button" title="Close prayers" aria-label="Close prayers">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </header>
+          <div id="overlayContent" class="overlay-content"></div>
+        </div>
+      </section>
     </main>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
