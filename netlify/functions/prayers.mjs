@@ -1,9 +1,21 @@
 import prayerService from "../../lib/prayer-service.js";
 
-const { listPrayers, createPrayer, clearArea } = prayerService;
+const { listPrayers, createPrayer, clearArea, getAudio } = prayerService;
 
 export default async (request) => {
   try {
+    const url = new URL(request.url);
+    const audioMatch = url.pathname.match(/^\/api\/prayers\/audio\/([a-f0-9-]+)$/i);
+    if (request.method === "GET" && audioMatch) {
+      const audio = await getAudio(audioMatch[1]);
+      return new Response(audio.data, {
+        headers: {
+          "Content-Type": audio.contentType,
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
     if (request.method === "GET") {
       return json(await listPrayers());
     }
@@ -25,7 +37,7 @@ export default async (request) => {
 };
 
 export const config = {
-  path: "/api/prayers",
+  path: ["/api/prayers", "/api/prayers/audio/:id"],
 };
 
 async function parseBody(request) {

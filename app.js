@@ -45,6 +45,7 @@ const state = {
   recordedDurationSeconds: 0,
   recordingTimer: null,
   isSubmitting: false,
+  pointerDown: null,
 };
 
 const scene = new THREE.Scene();
@@ -61,7 +62,9 @@ camera.zoom = 0.7;
 
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-controls.enablePan = false;
+controls.enablePan = true;
+controls.panSpeed = 0.62;
+controls.screenSpacePanning = false;
 controls.minZoom = 0.72;
 controls.maxZoom = 1.65;
 controls.minPolarAngle = 0.72;
@@ -69,6 +72,10 @@ controls.maxPolarAngle = 0.9;
 controls.minAzimuthAngle = -0.28;
 controls.maxAzimuthAngle = 0.28;
 controls.target.set(5.2, 0, 0.35);
+controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+controls.touches.ONE = THREE.TOUCH.PAN;
+controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -107,6 +114,7 @@ window.addEventListener("resize", resize);
 canvas.addEventListener("pointermove", onPointerMove);
 canvas.addEventListener("pointerleave", () => setHoveredArea(null));
 canvas.addEventListener("pointerdown", onPointerDown);
+canvas.addEventListener("pointerup", onPointerUp);
 prayerForm.addEventListener("submit", onSubmitPrayer);
 recordButton.addEventListener("click", toggleRecording);
 discardRecording.addEventListener("click", clearRecording);
@@ -375,8 +383,20 @@ function onPointerMove(event) {
   setHoveredArea(hit?.object.userData.areaId || null, event.clientX, event.clientY);
 }
 
-function onPointerDown() {
-  if (state.hoveredId) selectArea(state.hoveredId);
+function onPointerDown(event) {
+  state.pointerDown = {
+    x: event.clientX,
+    y: event.clientY,
+    areaId: state.hoveredId,
+  };
+}
+
+function onPointerUp(event) {
+  if (!state.pointerDown?.areaId) return;
+  const moved = Math.hypot(event.clientX - state.pointerDown.x, event.clientY - state.pointerDown.y);
+  const areaId = state.pointerDown.areaId;
+  state.pointerDown = null;
+  if (moved < 8) selectArea(areaId);
 }
 
 function setHoveredArea(id, x = 0, y = 0) {
@@ -715,6 +735,7 @@ function cycleTilt() {
   camera.position.set(...view.position);
   camera.zoom = view.zoom;
   controls.target.set(...view.target);
+  clampControlsTarget();
   camera.updateProjectionMatrix();
   controls.update();
 }
@@ -724,6 +745,7 @@ function resetView() {
   controls.target.set(5.2, 0, 0.35);
   camera.position.set(5.2, 24, 12);
   camera.zoom = 0.7;
+  clampControlsTarget();
   camera.updateProjectionMatrix();
   controls.update();
 }
@@ -735,7 +757,7 @@ function resize() {
   const aspect = width / height;
   const isMobile = width < 720;
   const frustum = isMobile ? 20.5 : 10.8;
-  const mobileMapLift = isMobile ? -14.4 : 0;
+  const mobileMapLift = isMobile ? -10.5 : 0;
   mapGroup.position.z = mobileMapLift;
   pinGroup.position.z = mobileMapLift;
   camera.left = -frustum * aspect;
@@ -755,7 +777,24 @@ function animate() {
     pin.children[1].position.y = 0.38 + Math.sin(time * 2.5 + id.length) * 0.035;
   });
   controls.update();
+  clampControlsTarget();
   renderer.render(scene, camera);
+}
+
+function clampControlsTarget() {
+  const isMobile = window.innerWidth < 720;
+  const zOffset = isMobile ? -10.5 : 0;
+  const min = { x: -8.5, y: -0.05, z: -9.5 + zOffset };
+  const max = { x: 10.5, y: 0.05, z: 8.8 + zOffset };
+  const clamped = new THREE.Vector3(
+    THREE.MathUtils.clamp(controls.target.x, min.x, max.x),
+    THREE.MathUtils.clamp(controls.target.y, min.y, max.y),
+    THREE.MathUtils.clamp(controls.target.z, min.z, max.z),
+  );
+  const delta = clamped.clone().sub(controls.target);
+  if (delta.lengthSq() === 0) return;
+  controls.target.copy(clamped);
+  camera.position.add(delta);
 }
 
 function updateAreaLift(time) {
