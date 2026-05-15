@@ -1,0 +1,756 @@
+:root {
+  color-scheme: dark;
+  --bg: #071013;
+  --panel: rgba(9, 15, 17, 0.82);
+  --panel-strong: rgba(8, 12, 14, 0.94);
+  --line: rgba(255, 255, 255, 0.14);
+  --ink: #f8f4e9;
+  --muted: #abb8b4;
+  --gold: #e7bb55;
+  --cyan: #68d6d2;
+  --green: #58b783;
+  --red: #c9585d;
+  --shadow: rgba(0, 0, 0, 0.38);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body,
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+body {
+  color: var(--ink);
+}
+
+button {
+  color: inherit;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(104, 214, 210, 0.09), transparent 34rem),
+    linear-gradient(145deg, #081315 0%, #111d1e 58%, #05090a 100%);
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+#scene:active {
+  cursor: grabbing;
+}
+
+.app-header,
+.detail-panel,
+.scene-controls {
+  position: absolute;
+  z-index: 5;
+}
+
+.app-header {
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.brand {
+  pointer-events: auto;
+}
+
+.brand,
+.detail-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 18px 46px var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  padding: 12px 14px 11px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 45%, var(--ink) 45% 55%, transparent 55%),
+    linear-gradient(0deg, transparent 45%, var(--ink) 45% 55%, transparent 55%),
+    #142a2a;
+}
+
+.brand p,
+.selected-summary p {
+  margin: 0 0 2px;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: clamp(1.45rem, 2vw, 2.05rem);
+  line-height: 1;
+}
+
+h2 {
+  font-size: clamp(1.28rem, 2vw, 1.72rem);
+  line-height: 1.06;
+}
+
+.wall-header span {
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.brand-prayer-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  font-size: 0.76rem;
+}
+
+.brand-prayer-count:hover,
+.brand-prayer-count:focus-visible {
+  outline: 1px solid rgba(104, 214, 210, 0.65);
+}
+
+.brand-prayer-count strong {
+  color: var(--cyan);
+  font-size: 0.95rem;
+}
+
+.detail-panel {
+  top: 15px;
+  right: 15px;
+  bottom: 15px;
+  display: flex;
+  width: min(520px, calc(100vw - 32px));
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel-strong);
+  transition:
+    opacity 180ms ease,
+    transform 220ms ease;
+  overflow: auto;
+}
+
+.panel-dismissed .detail-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(24px);
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.close-panel {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.reopen-panel {
+  position: absolute;
+  right: 18px;
+  bottom: 20px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: var(--panel-strong);
+  box-shadow: 0 18px 46px var(--shadow);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.metric-grid div {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.metric-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metric-grid strong {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prayer-form {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+.prayer-form label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.prayer-form input,
+.prayer-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.075);
+  outline: 0;
+}
+
+.prayer-form input {
+  height: 36px;
+  padding: 0 10px;
+}
+
+.prayer-form textarea {
+  min-height: 112px;
+  max-height: 150px;
+  resize: none;
+  padding: 10px;
+  line-height: 1.35;
+}
+
+.prayer-form input:focus,
+.prayer-form textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(104, 214, 210, 0.14);
+}
+
+.prayer-form > button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  border: 0;
+  border-radius: 6px;
+  color: #061012;
+  background: linear-gradient(135deg, var(--gold), #f5d987 55%, #8bdbab);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.prayer-form.is-submitting button[type="submit"] {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.audio-recorder {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.audio-recorder audio {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 36px;
+}
+
+.record-button,
+.discard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 96px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.record-button.is-recording {
+  border-color: rgba(201, 88, 93, 0.7);
+  color: #ffe6e8;
+  background: rgba(201, 88, 93, 0.22);
+}
+
+.discard-button {
+  min-width: 42px;
+  color: var(--muted);
+}
+
+#recordDuration {
+  justify-self: end;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.form-status {
+  min-height: 1.1rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.form-status.is-error {
+  color: #ffb1b5;
+}
+
+.prayer-form > button[type="submit"] svg,
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.25;
+}
+
+.prayer-wall {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.wall-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.text-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.wall-header strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.feed-list {
+  overflow: visible;
+}
+
+.prayer-entry {
+  margin-bottom: 9px;
+  padding: 10px;
+  border-left: 3px solid var(--cyan);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prayer-entry strong {
+  display: block;
+  color: var(--gold);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.prayer-entry p {
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.prayer-entry time {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.prayer-entry audio,
+.admin-area audio {
+  width: 100%;
+  height: 34px;
+  margin-top: 8px;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 128px;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.scene-controls {
+  right: 560px;
+  bottom: 28px;
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(8, 12, 14, 0.78);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.hover-label {
+  position: fixed;
+  z-index: 7;
+  max-width: 260px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: rgba(8, 12, 14, 0.92);
+  box-shadow: 0 12px 32px var(--shadow);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+.prayer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(2, 6, 7, 0.68);
+  backdrop-filter: blur(12px);
+}
+
+.overlay-shell {
+  display: grid;
+  width: min(920px, 100%);
+  max-height: min(760px, calc(100dvh - 44px));
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(8, 12, 14, 0.97);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.56);
+  overflow: hidden;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.overlay-header p,
+.overlay-area header span {
+  margin: 0 0 3px;
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.overlay-content {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+}
+
+.overlay-area {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.overlay-area header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.overlay-area h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.overlay-area header strong {
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+.overlay-prayers {
+  display: grid;
+  gap: 8px;
+}
+
+.overlay-empty {
+  min-height: 320px;
+}
+
+@media (max-width: 1120px) {
+  .detail-panel {
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+    max-height: min(60dvh, 440px);
+    overflow: auto;
+  }
+
+  .panel-dismissed .detail-panel {
+    transform: translateY(100%);
+  }
+
+  .scene-controls {
+    right: 16px;
+    bottom: calc(min(60dvh, 440px) + 28px);
+  }
+
+}
+
+@media (max-width: 680px) {
+  .app-header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .brand {
+    min-width: 0;
+    padding: 8px 9px;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  h1 {
+    font-size: 1.36rem;
+  }
+
+  .detail-panel {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: none;
+    height: 100dvh;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 0;
+    overflow: auto;
+    z-index: 10;
+  }
+
+  .reopen-panel {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 7px;
+  }
+
+  .metric-grid div {
+    padding: 5px;
+  }
+
+  .metric-grid strong {
+    font-size: 0.64rem;
+  }
+
+  .metric-grid span,
+  .selected-summary p,
+  .wall-header span {
+    font-size: 0.66rem;
+  }
+
+  .prayer-form label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .prayer-form {
+    gap: 6px;
+  }
+
+  .prayer-form input {
+    height: 34px;
+  }
+
+  .prayer-form textarea {
+    min-height: 128px;
+    max-height: 180px;
+  }
+
+  .prayer-form > button[type="submit"] {
+    height: 38px;
+  }
+
+  .audio-recorder {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .record-button,
+  .discard-button {
+    min-width: 0;
+    height: 34px;
+    padding: 0 9px;
+    font-size: 0.86rem;
+  }
+
+  .form-status {
+    font-size: 0.72rem;
+  }
+
+  .empty-state {
+    min-height: 52px;
+    padding: 9px;
+    font-size: 0.86rem;
+  }
+
+  .scene-controls {
+    right: 10px;
+    bottom: 62px;
+  }
+
+  .icon-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .overlay-shell {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .prayer-overlay {
+    padding: 8px;
+  }
+}

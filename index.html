@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tulsa Prayer Map</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23081315'/%3E%3Cpath d='M32 12v40M12 32h40' stroke='%23e7bb55' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app" aria-label="Tulsa prayer map">
+      <canvas id="scene" aria-label="Accurate 3D Tulsa Neighborhood Statistical Area map"></canvas>
+      <div id="hoverLabel" class="hover-label" hidden></div>
+
+      <header class="app-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <p>Tulsa</p>
+            <h1>Prayer Map</h1>
+            <button id="openAllPrayers" class="brand-prayer-count" type="button" aria-label="Open all prayers">
+              <strong id="totalPrayers">0</strong>
+              <span>prayers registered</span>
+            </button>
+          </div>
+        </div>
+        <span id="totalAreas" hidden>0</span>
+      </header>
+
+      <button id="reopenPanel" class="reopen-panel" type="button" hidden>
+        <i data-lucide="panel-right-open" aria-hidden="true"></i>
+        Prayer panel
+      </button>
+
+      <aside class="detail-panel" aria-label="Prayer registration">
+        <section class="selected-summary">
+          <div class="panel-title-row">
+            <div>
+              <p id="selectedMeta">NSA</p>
+              <h2 id="selectedName">Loading Tulsa...</h2>
+            </div>
+            <button id="closePanel" class="icon-button close-panel" type="button" title="Dismiss panel" aria-label="Dismiss panel">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="metric-grid" aria-label="Selected area metrics">
+            <div>
+            <span>Conditions</span>
+              <strong id="selectedScore">-</strong>
+            </div>
+            <div>
+              <span>Population</span>
+              <strong id="selectedPopulation">-</strong>
+            </div>
+            <div>
+              <span>Area</span>
+              <strong id="selectedArea">-</strong>
+            </div>
+            <div>
+              <span>Prayers</span>
+              <strong id="prayerCount">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <form id="prayerForm" class="prayer-form">
+          <label for="prayerName">Name</label>
+          <input id="prayerName" maxlength="42" placeholder="Optional" autocomplete="name" />
+          <label for="prayerText">Prayer</label>
+          <textarea id="prayerText" maxlength="1200" placeholder="Enter a prayer for the selected area"></textarea>
+          <div class="audio-recorder" aria-label="Record a prayer">
+            <button id="recordButton" class="record-button" type="button">
+              <i data-lucide="mic" aria-hidden="true"></i>
+              Record
+            </button>
+            <button id="discardRecording" class="discard-button" type="button" hidden>
+              <i data-lucide="x" aria-hidden="true"></i>
+              Discard
+            </button>
+            <span id="recordDuration">0:00</span>
+            <audio id="audioPreview" controls hidden></audio>
+          </div>
+          <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+          <button type="submit">
+            <i data-lucide="map-pin-plus" aria-hidden="true"></i>
+            Register prayer
+          </button>
+        </form>
+
+        <section class="prayer-wall">
+          <div class="wall-header">
+            <div>
+              <span>Prayer Wall</span>
+              <strong id="wallPreviewCount">No prayers yet</strong>
+            </div>
+            <button id="expandAreaWall" class="text-button" type="button">
+              <i data-lucide="maximize-2" aria-hidden="true"></i>
+              View wall
+            </button>
+          </div>
+          <div id="prayerFeed" class="feed-list"></div>
+        </section>
+      </aside>
+
+      <div class="scene-controls" aria-label="Scene controls">
+        <button id="tiltButton" class="icon-button" type="button" title="Change camera angle" aria-label="Change camera angle">
+          <i data-lucide="rotate-3d" aria-hidden="true"></i>
+        </button>
+        <button id="resetButton" class="icon-button" type="button" title="Reset view" aria-label="Reset view">
+          <i data-lucide="locate-fixed" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <section id="prayerOverlay" class="prayer-overlay" aria-modal="true" role="dialog" aria-labelledby="overlayTitle" hidden>
+        <div class="overlay-shell">
+          <header class="overlay-header">
+            <div>
+              <p id="overlayKicker">Prayer Wall</p>
+              <h2 id="overlayTitle">Prayers</h2>
+            </div>
+            <button id="closeOverlay" class="icon-button" type="button" title="Close prayers" aria-label="Close prayers">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </header>
+          <div id="overlayContent" class="overlay-content"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
