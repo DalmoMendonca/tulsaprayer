@@ -30,6 +30,20 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\nPort ${port} is already in use.\n\n` +
+      `Fix options:\n` +
+      `  1. Stop whatever is using port ${port}\n` +
+      `  2. Use a different port:  PORT=3000 npm start\n` +
+      `     (PowerShell:  $env:PORT=3000; npm start)\n`
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(port, host, () => {
   console.log(`Tulsa Prayer Map running at http://${host}:${port}`);
 });
