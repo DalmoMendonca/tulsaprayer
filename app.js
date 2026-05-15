@@ -303,7 +303,7 @@ function makePrayerHeart() {
       depthWrite: false,
     }),
   );
-  heart.scale.set(0.62, 0.62, 1);
+  heart.scale.set(0.5, 0.5, 1);
   heart.renderOrder = 20;
   return heart;
 }
@@ -313,26 +313,22 @@ function makePrayerHeartTexture() {
   textureCanvas.width = 192;
   textureCanvas.height = 192;
   const context = textureCanvas.getContext("2d");
+  const heartPath = new Path2D(
+    "M47.6 300.4 228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4C494.8 272.1 512 232.4 512 190.9v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z",
+  );
   context.clearRect(0, 0, 192, 192);
   context.save();
-  context.translate(96, 98);
-  context.scale(4.85, 4.85);
-  context.beginPath();
-  context.moveTo(0, 19);
-  context.bezierCurveTo(-18, 8, -27, -3, -25, -15);
-  context.bezierCurveTo(-23, -27, -9, -31, 0, -19);
-  context.bezierCurveTo(9, -31, 23, -27, 25, -15);
-  context.bezierCurveTo(27, -3, 18, 8, 0, 19);
-  context.closePath();
+  context.translate(18, 18);
+  context.scale(0.305, 0.305);
   context.shadowColor = "rgba(0, 0, 0, 0.34)";
-  context.shadowBlur = 5;
-  context.shadowOffsetY = 2;
+  context.shadowBlur = 18;
+  context.shadowOffsetY = 8;
   context.fillStyle = "#0798fb";
-  context.fill();
+  context.fill(heartPath);
   context.shadowColor = "transparent";
-  context.lineWidth = 1.7;
+  context.lineWidth = 18;
   context.strokeStyle = "rgba(255, 255, 255, 0.92)";
-  context.stroke();
+  context.stroke(heartPath);
   context.restore();
   const texture = new THREE.CanvasTexture(textureCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -421,7 +417,7 @@ function updateCounts() {
   state.pins.forEach((pin, id) => {
     const count = getPrayers(id).length;
     pin.visible = count > 0;
-    pin.scale.set(0.62, 0.62, 1);
+    pin.scale.set(0.5, 0.5, 1);
   });
   updateAreaColors();
 }
@@ -1190,7 +1186,7 @@ function updatePrayerMarkers(time) {
     const areaGroup = state.meshes.get(id);
     const lift = areaGroup?.position.y || 0;
     const selected = id === state.selectedId;
-    const size = selected ? 0.76 + Math.sin(time * 3.2) * 0.018 : 0.62;
+    const size = selected ? 0.58 + Math.sin(time * 3.2) * 0.014 : 0.5;
     pin.position.y = pin.userData.baseY + lift + 0.018;
     pin.scale.set(size, size, 1);
   });
