@@ -345,7 +345,6 @@ function selectArea(id, focusForm = true, focusMap = true) {
   selectedArea.textContent = `${area.areaSqMiles.toFixed(2)} sq mi`;
   prayerCount.textContent = formatPrayerCount(prayers.length);
   wallPreviewCount.textContent = prayers.length ? formatPrayerCount(prayers.length) : "No prayers yet";
-  renderPrayerFeed(prayers);
   updateMapState();
   updateCounts();
 
@@ -802,17 +801,6 @@ function refreshIcons() {
 
 function apiUrl() {
   return "/api/prayers";
-}
-
-function renderPrayerFeed(prayers) {
-  const count = prayers.length;
-  prayerFeed.innerHTML = `
-    <button class="wall-open-card" type="button" data-open-wall>
-      <span>${count ? `${formatPrayerCount(count)} registered here` : "No prayers registered here yet"}</span>
-      <strong>${count ? "Open neighborhood prayer wall" : "Open empty prayer wall"}</strong>
-    </button>
-  `;
-  prayerFeed.querySelector("[data-open-wall]").addEventListener("click", openSelectedPrayerWall);
 }
 
 function dismissPanel() {
