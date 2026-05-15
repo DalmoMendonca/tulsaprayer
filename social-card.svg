@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Tulsa Prayer Map</title>
+  <desc id="desc">A 3D neighborhood prayer map for Tulsa, Oklahoma.</desc>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#0798fb" stop-opacity=".32"/>
+      <stop offset=".52" stop-color="#071315" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#030708"/>
+    </radialGradient>
+    <linearGradient id="map" x1="0" x2="1">
+      <stop offset="0" stop-color="#ea1c24"/>
+      <stop offset=".5" stop-color="#ffb302"/>
+      <stop offset="1" stop-color="#01d6a5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <g transform="translate(130 105)">
+    <circle cx="52" cy="54" r="39" fill="#10242a" stroke="#0798fb" stroke-width="5"/>
+    <path d="M52 86S24 68 24 43c0-12 9-20 20-20 6 0 12 3 16 9 4-6 10-9 16-9 11 0 20 8 20 20 0 25-28 43-44 43Z" fill="#0798fb"/>
+    <text x="116" y="46" fill="#ffb302" font-family="Inter,Segoe UI,sans-serif" font-size="28" font-weight="850" letter-spacing=".5">TULSA</text>
+    <text x="116" y="103" fill="#f8f4e9" font-family="Inter,Segoe UI,sans-serif" font-size="78" font-weight="900">Prayer Map</text>
+    <text x="4" y="184" fill="#c5d2d1" font-family="Inter,Segoe UI,sans-serif" font-size="32" font-weight="650">Pray for Tulsa by neighborhood.</text>
+  </g>
+  <g transform="translate(535 285) rotate(-8)">
+    <path d="M0 92h150v72H0zM150 74h132v90H150zM282 40h168v124H282zM450 70h126v94H450zM576 96h170v68H576zM72 164h142v82H72zM214 164h150v104H214zM364 164h144v84H364zM508 164h128v90H508zM142 246h150v88H142zM292 268h146v102H292zM438 248h126v92H438z" fill="url(#map)" opacity=".95"/>
+    <path d="M448 118c-27-18-53 13-30 39 10 12 30 25 30 25s20-13 30-25c23-26-3-57-30-39Z" fill="#0798fb" stroke="#f8f4e9" stroke-width="7"/>
+  </g>
+</svg>

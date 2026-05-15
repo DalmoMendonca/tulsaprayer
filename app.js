@@ -7,7 +7,6 @@ const canvas = document.querySelector("#scene");
 const totalPrayers = document.querySelector("#totalPrayers");
 const totalAreas = document.querySelector("#totalAreas");
 const selectedName = document.querySelector("#selectedName");
-const selectedMeta = document.querySelector("#selectedMeta");
 const selectedScore = document.querySelector("#selectedScore");
 const selectedPopulation = document.querySelector("#selectedPopulation");
 const selectedArea = document.querySelector("#selectedArea");
@@ -21,7 +20,13 @@ const recordButton = document.querySelector("#recordButton");
 const discardRecording = document.querySelector("#discardRecording");
 const recordDuration = document.querySelector("#recordDuration");
 const audioPreview = document.querySelector("#audioPreview");
+const audioPlayback = document.querySelector("#audioPlayback");
+const playRecording = document.querySelector("#playRecording");
+const audioSeek = document.querySelector("#audioSeek");
+const audioCurrent = document.querySelector("#audioCurrent");
+const audioTotal = document.querySelector("#audioTotal");
 const formStatus = document.querySelector("#formStatus");
+const submitPrayer = document.querySelector("#submitPrayer");
 const tiltButton = document.querySelector("#tiltButton");
 const resetButton = document.querySelector("#resetButton");
 const hoverLabel = document.querySelector("#hoverLabel");
@@ -58,6 +63,7 @@ const state = {
   discardingRecording: false,
   userStoppedRecording: false,
   isSubmitting: false,
+  isTranscribing: false,
   pointerDown: null,
   panelDismissed: false,
   activeStreams: [],
@@ -132,8 +138,17 @@ canvas.addEventListener("pointerleave", () => setHoveredArea(null));
 canvas.addEventListener("pointerdown", onPointerDown);
 canvas.addEventListener("pointerup", onPointerUp);
 prayerForm.addEventListener("submit", onSubmitPrayer);
+prayerText.addEventListener("input", updateSubmitState);
 recordButton.addEventListener("click", toggleRecording);
 discardRecording.addEventListener("click", clearRecording);
+playRecording.addEventListener("click", togglePlayback);
+audioSeek.addEventListener("input", seekRecording);
+audioPreview.addEventListener("loadedmetadata", syncPlaybackMeta);
+audioPreview.addEventListener("timeupdate", syncPlaybackTime);
+audioPreview.addEventListener("ended", () => {
+  playRecording.innerHTML = `<i data-lucide="play" aria-hidden="true"></i>`;
+  refreshIcons();
+});
 tiltButton.addEventListener("click", cycleTilt);
 resetButton.addEventListener("click", resetView);
 openAllPrayers.addEventListener("click", openAllPrayerWall);
@@ -224,8 +239,8 @@ function buildMap() {
     });
 
     const centroid = projectedCentroid(area.geometry);
-    const pin = makePrayerPin();
-    pin.position.set(centroid.x, height + 0.22, centroid.z);
+    const pin = makePrayerHeart();
+    pin.position.set(centroid.x, height + 0.018, centroid.z);
     pin.visible = getPrayers(area.id).length > 0;
     pinGroup.add(pin);
 
@@ -277,25 +292,26 @@ function makeOutline(polygon, height) {
   return new THREE.LineLoop(geometry, material);
 }
 
-function makePrayerPin() {
-  const group = new THREE.Group();
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.035, 0.05, 0.35, 10),
-    new THREE.MeshStandardMaterial({ color: 0xf9f6ec, roughness: 0.38 }),
-  );
-  base.position.y = 0.16;
-  const top = new THREE.Mesh(
-    new THREE.SphereGeometry(0.13, 18, 18),
+function makePrayerHeart() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.13);
+  shape.bezierCurveTo(-0.42, -0.34, -0.58, 0.12, -0.3, 0.28);
+  shape.bezierCurveTo(-0.14, 0.37, 0, 0.26, 0, 0.12);
+  shape.bezierCurveTo(0, 0.26, 0.14, 0.37, 0.3, 0.28);
+  shape.bezierCurveTo(0.58, 0.12, 0.42, -0.34, 0, -0.13);
+  const heart = new THREE.Mesh(
+    new THREE.ShapeGeometry(shape, 32),
     new THREE.MeshStandardMaterial({
-      color: 0xffc857,
-      emissive: 0xffb21c,
-      emissiveIntensity: 1.5,
-      roughness: 0.26,
+      color: 0x0798fb,
+      emissive: 0x0798fb,
+      emissiveIntensity: 0.65,
+      roughness: 0.42,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
     }),
   );
-  top.position.y = 0.38;
-  group.add(base, top);
-  return group;
+  heart.rotation.x = -Math.PI / 2;
+  return heart;
 }
 
 function addCardinalMarkers() {
@@ -339,7 +355,6 @@ function selectArea(id, focusForm = true, focusMap = true) {
   const prayers = getPrayers(id);
 
   selectedName.textContent = area.name;
-  selectedMeta.textContent = `Area ${area.mapId} - Conditions rank ${area.rank || "N/A"}`;
   selectedScore.textContent = area.score ? area.score.toFixed(1) : "N/A";
   selectedPopulation.textContent = formatNumber(area.population);
   selectedArea.textContent = `${area.areaSqMiles.toFixed(2)} sq mi`;
@@ -353,6 +368,7 @@ function selectArea(id, focusForm = true, focusMap = true) {
     animateViewTo(new THREE.Vector3(centroid.x + 2.4, 0, centroid.z + state.mapOffsetZ), 760);
   }
   if (focusForm && window.innerWidth >= 720) prayerText.focus({ preventScroll: true });
+  updateSubmitState();
 }
 
 function updateMapState() {
@@ -379,7 +395,7 @@ function updateCounts() {
   state.pins.forEach((pin, id) => {
     const count = getPrayers(id).length;
     pin.visible = count > 0;
-    pin.scale.setScalar(0.85 + Math.min(count, 18) * 0.04);
+    pin.scale.setScalar(0.7 + Math.min(count, 18) * 0.05);
   });
   updateAreaColors();
 }
@@ -458,7 +474,8 @@ async function onSubmitPrayer(event) {
 
   state.isSubmitting = true;
   prayerForm.classList.add("is-submitting");
-  setFormStatus(state.recordedBlob ? "Transcribing and reviewing prayer..." : "Reviewing prayer...");
+  updateSubmitState();
+  setFormStatus("Reviewing prayer...");
 
   try {
     const area = getArea(state.selectedId);
@@ -486,6 +503,7 @@ async function onSubmitPrayer(event) {
   } finally {
     state.isSubmitting = false;
     prayerForm.classList.remove("is-submitting");
+    updateSubmitState();
   }
 }
 
@@ -547,7 +565,7 @@ async function toggleRecording() {
   recordButton.classList.add("is-recording");
   recordButton.innerHTML = `<i data-lucide="square" aria-hidden="true"></i> Stop`;
   discardRecording.hidden = true;
-  audioPreview.hidden = true;
+  audioPlayback.hidden = true;
   setFormStatus("Recording... limit 5 minutes.");
   updateRecordingTimer();
   state.recordingTimer = window.setInterval(updateRecordingTimer, 500);
@@ -598,33 +616,12 @@ function finishRecording(stream) {
   recordButton.innerHTML = `<i data-lucide="mic" aria-hidden="true"></i> Re-record`;
   discardRecording.hidden = false;
   audioPreview.src = URL.createObjectURL(state.recordedBlob);
-  audioPreview.hidden = false;
+  audioPlayback.hidden = false;
+  syncPlaybackMeta();
   setFormStatus("Transcribing recording...");
+  updateSubmitState();
+  transcribeCurrentRecording();
   refreshIcons();
-  autoTranscribe();
-}
-
-async function autoTranscribe() {
-  const blob = state.recordedBlob;
-  if (!blob) return;
-  try {
-    const audio = await serializeRecording();
-    const result = await fetchJson("/api/transcribe", {
-      method: "POST",
-      body: JSON.stringify({ audio }),
-    });
-    if (blob !== state.recordedBlob) return;
-    if (result.text) {
-      const existing = prayerText.value.trim();
-      prayerText.value = existing ? `${existing}\n\n${result.text}` : result.text;
-      setFormStatus("Transcription ready. Review and submit.");
-    } else {
-      setFormStatus("Recording ready. Submit to post your prayer.");
-    }
-  } catch {
-    if (blob !== state.recordedBlob) return;
-    setFormStatus("Recording ready. Submit to post your prayer.");
-  }
 }
 
 function clearRecording() {
@@ -648,9 +645,79 @@ function clearRecording() {
   recordButton.innerHTML = `<i data-lucide="mic" aria-hidden="true"></i> Record`;
   discardRecording.hidden = true;
   if (audioPreview.src) URL.revokeObjectURL(audioPreview.src);
+  audioPreview.pause();
   audioPreview.removeAttribute("src");
-  audioPreview.hidden = true;
+  audioPlayback.hidden = true;
+  audioSeek.value = "0";
+  audioCurrent.textContent = "0:00";
+  audioTotal.textContent = "0:00";
+  playRecording.innerHTML = `<i data-lucide="play" aria-hidden="true"></i>`;
+  updateSubmitState();
   refreshIcons();
+}
+
+async function transcribeCurrentRecording() {
+  if (!state.recordedBlob) return;
+  state.isTranscribing = true;
+  updateSubmitState();
+  try {
+    const audio = await serializeRecording();
+    const result = await fetchJson("/api/transcribe", {
+      method: "POST",
+      body: JSON.stringify({ audio }),
+    });
+    if (result.text) {
+      prayerText.value = mergeTranscriptIntoPrayer(prayerText.value, result.text);
+      setFormStatus("Transcript added. Edit it before submitting.");
+    } else {
+      setFormStatus("No speech was detected. You can type the prayer instead.", true);
+    }
+  } catch (error) {
+    setFormStatus(error.message || "Transcription failed. You can type the prayer instead.", true);
+  } finally {
+    state.isTranscribing = false;
+    updateSubmitState();
+  }
+}
+
+function mergeTranscriptIntoPrayer(currentText, transcript) {
+  const cleanTranscript = transcript.trim();
+  if (!currentText.trim()) return cleanTranscript;
+  if (currentText.includes(cleanTranscript)) return currentText;
+  return `${currentText.trim()}\n\n${cleanTranscript}`.slice(0, 1200);
+}
+
+function togglePlayback() {
+  if (audioPreview.paused) {
+    audioPreview.play();
+    playRecording.innerHTML = `<i data-lucide="pause" aria-hidden="true"></i>`;
+  } else {
+    audioPreview.pause();
+    playRecording.innerHTML = `<i data-lucide="play" aria-hidden="true"></i>`;
+  }
+  refreshIcons();
+}
+
+function seekRecording() {
+  if (!Number.isFinite(audioPreview.duration)) return;
+  audioPreview.currentTime = (Number(audioSeek.value) / 1000) * audioPreview.duration;
+}
+
+function syncPlaybackMeta() {
+  audioTotal.textContent = formatDuration(Math.round(audioPreview.duration || state.recordedDurationSeconds || 0));
+  syncPlaybackTime();
+}
+
+function syncPlaybackTime() {
+  audioCurrent.textContent = formatDuration(Math.floor(audioPreview.currentTime || 0));
+  if (Number.isFinite(audioPreview.duration) && audioPreview.duration > 0) {
+    audioSeek.value = String(Math.round((audioPreview.currentTime / audioPreview.duration) * 1000));
+  }
+}
+
+function updateSubmitState() {
+  const hasContent = Boolean(prayerText.value.trim() || state.recordedBlob);
+  submitPrayer.disabled = state.isSubmitting || state.isTranscribing || !hasContent;
 }
 
 function updateRecordingTimer() {
@@ -839,15 +906,12 @@ function renderAreaPrayerSection(area, selectedOnly) {
   const entries = prayers.length
     ? prayers.map(renderPrayerEntry).join("")
     : `<div class="empty-state">No prayers registered for this area yet.</div>`;
+  const header = selectedOnly
+    ? `<header><strong>${formatPrayerCount(prayers.length)}</strong></header>`
+    : `<header><h3>${escapeHtml(area.name)}</h3><strong>${formatPrayerCount(prayers.length)}</strong></header>`;
   return `
     <section class="overlay-area ${selectedOnly ? "is-selected" : ""}">
-      <header>
-        <div>
-          <span>Area ${area.mapId}</span>
-          <h3>${escapeHtml(area.name)}</h3>
-        </div>
-        <strong>${formatPrayerCount(prayers.length)}</strong>
-      </header>
+      ${header}
       <div class="overlay-prayers">${entries}</div>
     </section>
   `;
@@ -994,9 +1058,9 @@ function mergePrayerSets(primary, secondary) {
 }
 
 function prayerScoreColor(value, min, max) {
-  const red = new THREE.Color("#921d32");
-  const amber = new THREE.Color("#e8c85e");
-  const green = new THREE.Color("#147a4f");
+  const red = new THREE.Color("#ea1c24");
+  const amber = new THREE.Color("#ffb302");
+  const green = new THREE.Color("#01d6a5");
   const t = max === min ? 0.5 : (value - min) / (max - min);
   if (t < 0.5) return red.clone().lerp(amber, t * 2);
   return amber.clone().lerp(green, (t - 0.5) * 2);
@@ -1067,7 +1131,7 @@ function animate() {
   updateAreaLift(time);
   state.pins.forEach((pin, id) => {
     if (!pin.visible) return;
-    pin.children[1].position.y = 0.38 + Math.sin(time * 2.5 + id.length) * 0.035;
+    pin.material.emissiveIntensity = 0.55 + Math.sin(time * 2.4 + id.length) * 0.14;
   });
   controls.update();
   clampControlsTarget();

@@ -1,7 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { listPrayers, createPrayer, clearArea, deletePrayer, transcribe } = require("./lib/prayer-service");
+const { listPrayers, createPrayer, clearArea, deletePrayer, transcribeRecording } = require("./lib/prayer-service");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
@@ -19,13 +19,8 @@ const mimeTypes = {
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
-    if (url.pathname === "/api/prayers") {
+    if (url.pathname === "/api/prayers" || url.pathname === "/api/transcribe") {
       await handleApi(request, response);
-      return;
-    }
-    if (url.pathname === "/api/transcribe" && request.method === "POST") {
-      const body = await readJsonBody(request);
-      sendJson(response, 200, await transcribe(body));
       return;
     }
     await serveStatic(response, url.pathname);
@@ -60,6 +55,11 @@ async function handleApi(request, response) {
   }
 
   const body = await readJsonBody(request);
+
+  if (request.method === "POST" && request.url?.startsWith("/api/transcribe")) {
+    sendJson(response, 200, await transcribeRecording(body));
+    return;
+  }
 
   if (request.method === "POST") {
     sendJson(response, 200, await createPrayer(body));

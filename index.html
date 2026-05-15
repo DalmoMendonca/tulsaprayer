@@ -4,7 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tulsa Prayer Map</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23081315'/%3E%3Cpath d='M32 12v40M12 32h40' stroke='%23e7bb55' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <meta name="description" content="Pray for Tulsa by neighborhood. Select an area on the 3D map, submit a prayer, and see prayer activity across the city." />
+    <meta name="theme-color" content="#071013" />
+    <link rel="canonical" href="https://tulsaprayer.dalmo.ai/" />
+    <meta property="og:site_name" content="Tulsa Prayer Map" />
+    <meta property="og:title" content="Tulsa Prayer Map" />
+    <meta property="og:description" content="A 3D neighborhood prayer map for Tulsa, Oklahoma." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tulsaprayer.dalmo.ai/" />
+    <meta property="og:image" content="https://tulsaprayer.dalmo.ai/social-card.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tulsa Prayer Map" />
+    <meta name="twitter:description" content="A 3D neighborhood prayer map for Tulsa, Oklahoma." />
+    <meta name="twitter:image" content="https://tulsaprayer.dalmo.ai/social-card.svg" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23071315'/%3E%3Cpath d='M32 52S14 40 14 25c0-8 6-13 13-13 4 0 8 2 10 6 2-4 6-6 10-6 7 0 13 5 13 13 0 15-18 27-28 27Z' fill='%230798fb'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="./styles.css" />
     <script type="importmap">
       {
@@ -12,6 +25,17 @@
           "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
         }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Tulsa Prayer Map",
+        "url": "https://tulsaprayer.dalmo.ai/",
+        "description": "A 3D neighborhood prayer map for Tulsa, Oklahoma.",
+        "applicationCategory": "CommunityApplication",
+        "operatingSystem": "Any"
       }
     </script>
   </head>
@@ -44,7 +68,6 @@
         <section class="selected-summary">
           <div class="panel-title-row">
             <div>
-              <p id="selectedMeta">NSA</p>
               <h2 id="selectedName">Loading Tulsa...</h2>
             </div>
             <button id="closePanel" class="icon-button close-panel" type="button" title="Dismiss panel" aria-label="Dismiss panel">
@@ -86,12 +109,20 @@
               Discard
             </button>
             <span id="recordDuration">0:00</span>
-            <audio id="audioPreview" controls hidden></audio>
+            <div id="audioPlayback" class="audio-playback" hidden>
+              <button id="playRecording" class="audio-play-button" type="button" aria-label="Play recording">
+                <i data-lucide="play" aria-hidden="true"></i>
+              </button>
+              <span id="audioCurrent">0:00</span>
+              <input id="audioSeek" class="audio-seek" type="range" min="0" max="1000" value="0" aria-label="Recording playback position" />
+              <span id="audioTotal">0:00</span>
+            </div>
+            <audio id="audioPreview" hidden></audio>
           </div>
           <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
-          <button type="submit">
-            <i data-lucide="map-pin-plus" aria-hidden="true"></i>
-            Register prayer
+          <button id="submitPrayer" type="submit" disabled>
+            <i data-lucide="send" aria-hidden="true"></i>
+            Submit Prayer
           </button>
         </form>
 
