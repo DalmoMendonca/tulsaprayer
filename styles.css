@@ -178,9 +178,9 @@ h2 {
 }
 
 .detail-panel {
-  top: 86px;
-  right: 22px;
-  bottom: 18px;
+  top: 15px;
+  right: 15px;
+  bottom: 15px;
   display: flex;
   width: min(520px, calc(100vw - 32px));
   min-height: 0;
@@ -434,29 +434,6 @@ h2 {
 
 .feed-list {
   overflow: visible;
-}
-
-.wall-open-card {
-  display: grid;
-  width: 100%;
-  gap: 4px;
-  border: 1px solid rgba(104, 214, 210, 0.18);
-  border-radius: 8px;
-  padding: 11px 12px;
-  color: var(--ink);
-  background: rgba(104, 214, 210, 0.055);
-  cursor: pointer;
-  text-align: left;
-}
-
-.wall-open-card span {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.wall-open-card strong {
-  color: var(--cyan);
-  font-size: 0.9rem;
 }
 
 .prayer-entry {
