@@ -1,7 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { listPrayers, createPrayer, clearArea, deletePrayer } = require("./lib/prayer-service");
+const { listPrayers, createPrayer, clearArea, deletePrayer, transcribe } = require("./lib/prayer-service");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
@@ -23,11 +23,30 @@ const server = http.createServer(async (request, response) => {
       await handleApi(request, response);
       return;
     }
+    if (url.pathname === "/api/transcribe" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, await transcribe(body));
+      return;
+    }
     await serveStatic(response, url.pathname);
   } catch (error) {
     console.error(error);
     sendJson(response, error.status || 500, { error: error.message || "Server error." });
   }
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\nPort ${port} is already in use.\n\n` +
+      `Fix options:\n` +
+      `  1. Stop whatever is using port ${port}\n` +
+      `  2. Use a different port:  PORT=3000 npm start\n` +
+      `     (PowerShell:  $env:PORT=3000; npm start)\n`
+    );
+    process.exit(1);
+  }
+  throw err;
 });
 
 server.listen(port, host, () => {

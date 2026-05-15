@@ -600,8 +600,32 @@ function finishRecording(stream) {
   discardRecording.hidden = false;
   audioPreview.src = URL.createObjectURL(state.recordedBlob);
   audioPreview.hidden = false;
-  setFormStatus("Recording ready. It will be transcribed before posting.");
+  setFormStatus("Transcribing recording...");
   refreshIcons();
+  autoTranscribe();
+}
+
+async function autoTranscribe() {
+  const blob = state.recordedBlob;
+  if (!blob) return;
+  try {
+    const audio = await serializeRecording();
+    const result = await fetchJson("/api/transcribe", {
+      method: "POST",
+      body: JSON.stringify({ audio }),
+    });
+    if (blob !== state.recordedBlob) return;
+    if (result.text) {
+      const existing = prayerText.value.trim();
+      prayerText.value = existing ? `${existing}\n\n${result.text}` : result.text;
+      setFormStatus("Transcription ready. Review and submit.");
+    } else {
+      setFormStatus("Recording ready. Submit to post your prayer.");
+    }
+  } catch {
+    if (blob !== state.recordedBlob) return;
+    setFormStatus("Recording ready. Submit to post your prayer.");
+  }
 }
 
 function clearRecording() {

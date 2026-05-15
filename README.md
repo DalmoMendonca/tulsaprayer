@@ -34,7 +34,40 @@ Audio prayers are saved into a Google Drive folder named `tulsaprayer-audio`; th
 ## Local Development
 
 ```bash
+npm install
 npm start
 ```
 
-Local text submission requires either real environment variables or `ALLOW_UNMODERATED_LOCAL=1` for UI testing without OpenAI/Google services.
+The server starts at `http://127.0.0.1:4173` by default.
+
+### Environment variables
+
+Copy `.env.example` to `.env` and fill in values as needed, or run with `ALLOW_UNMODERATED_LOCAL=1` to skip OpenAI moderation and Google Sheets (good for pure UI testing):
+
+```bash
+ALLOW_UNMODERATED_LOCAL=1 npm start
+```
+
+PowerShell:
+
+```powershell
+$env:ALLOW_UNMODERATED_LOCAL=1; npm start
+```
+
+### Changing the port
+
+Set the `PORT` (and optionally `HOST`) environment variable:
+
+```bash
+PORT=3000 npm start
+```
+
+PowerShell:
+
+```powershell
+$env:PORT=3000; npm start
+```
+
+### "Port already in use" error
+
+If you see `EADDRINUSE`, another process is using port 4173. Either stop that process or start on a different port as shown above.
