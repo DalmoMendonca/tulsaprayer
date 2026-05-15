@@ -1,6 +1,6 @@
 import prayerService from "../../lib/prayer-service.js";
 
-const { listPrayers, createPrayer, clearArea, getAudio } = prayerService;
+const { listPrayers, createPrayer, clearArea, deletePrayer, getAudio } = prayerService;
 
 export default async (request) => {
   try {
@@ -27,6 +27,7 @@ export default async (request) => {
     }
 
     if (request.method === "DELETE") {
+      if (body.prayerId) return json(await deletePrayer(body.areaId, body.prayerId, body.password));
       return json(await clearArea(body.areaId, body.password));
     }
 

@@ -9,7 +9,7 @@
 }
 
 .admin-card {
-  width: min(780px, 100%);
+  width: min(920px, 100%);
   max-height: calc(100dvh - 40px);
   display: grid;
   gap: 16px;
@@ -107,4 +107,42 @@
   margin: 0;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.admin-prayer {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.admin-prayer > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-prayer strong {
+  color: var(--gold);
+}
+
+.admin-prayer time {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.admin-prayer p {
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.admin-list .admin-delete-prayer {
+  justify-self: start;
+  height: 32px;
+  border: 1px solid rgba(255, 177, 181, 0.44);
+  color: #ffd7da;
+  background: rgba(201, 88, 93, 0.16);
 }

@@ -26,18 +26,13 @@
           <div>
             <p>Tulsa</p>
             <h1>Prayer Map</h1>
+            <button id="openAllPrayers" class="brand-prayer-count" type="button" aria-label="Open all prayers">
+              <strong id="totalPrayers">0</strong>
+              <span>prayers registered</span>
+            </button>
           </div>
         </div>
-        <div class="header-stats" aria-live="polite">
-          <button id="openAllPrayers" class="stat-card" type="button" aria-label="Open all prayers">
-            <strong id="totalPrayers">0</strong>
-            <span>Prayers</span>
-          </button>
-          <div class="stat-card">
-            <strong id="totalAreas">0</strong>
-            <span>Areas</span>
-          </div>
-        </div>
+        <span id="totalAreas" hidden>0</span>
       </header>
 
       <button id="reopenPanel" class="reopen-panel" type="button" hidden>
@@ -102,8 +97,14 @@
 
         <section class="prayer-wall">
           <div class="wall-header">
-            <span>Prayer Wall</span>
-            <button id="expandAreaWall" class="text-button" type="button">Expand</button>
+            <div>
+              <span>Prayer Wall</span>
+              <strong id="wallPreviewCount">No prayers yet</strong>
+            </div>
+            <button id="expandAreaWall" class="text-button" type="button">
+              <i data-lucide="maximize-2" aria-hidden="true"></i>
+              View wall
+            </button>
           </div>
           <div id="prayerFeed" class="feed-list"></div>
         </section>

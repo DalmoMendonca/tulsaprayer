@@ -56,12 +56,19 @@ async function loadAdmin() {
           ${entries
             .map(
               (entry) => `
-                <p><strong>${escapeHtml(entry.name)}</strong>: ${escapeHtml(entry.text)}</p>
-                ${
-                  entry.audioUrl
-                    ? `<audio controls preload="none" src="${escapeAttribute(entry.audioUrl)}"></audio>`
-                    : ""
-                }
+                <div class="admin-prayer">
+                  <div>
+                    <strong>${escapeHtml(entry.name)}</strong>
+                    <time datetime="${escapeAttribute(entry.createdAt)}">${formatDate(entry.createdAt)}</time>
+                  </div>
+                  <p>${escapeHtml(entry.text)}</p>
+                  ${
+                    entry.audioUrl
+                      ? `<audio controls preload="none" src="${escapeAttribute(entry.audioUrl)}"></audio>`
+                      : ""
+                  }
+                  <button type="button" class="admin-delete-prayer" data-area="${escapeAttribute(area.id)}" data-prayer="${escapeAttribute(entry.id)}">Delete prayer</button>
+                </div>
               `,
             )
             .join("")}
@@ -72,6 +79,9 @@ async function loadAdmin() {
 
   adminList.querySelectorAll("[data-clear]").forEach((button) => {
     button.addEventListener("click", () => clearArea(button.dataset.clear));
+  });
+  adminList.querySelectorAll("[data-prayer]").forEach((button) => {
+    button.addEventListener("click", () => deletePrayer(button.dataset.area, button.dataset.prayer));
   });
 }
 
@@ -86,6 +96,28 @@ async function clearArea(areaId) {
     return;
   }
   await loadAdmin();
+}
+
+async function deletePrayer(areaId, prayerId) {
+  const response = await fetch(apiUrl(), {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ areaId, prayerId, password: adminPassword }),
+  });
+  if (!response.ok) {
+    alert("Prayer could not be deleted. Check the admin password and try again.");
+    return;
+  }
+  await loadAdmin();
+}
+
+function formatDate(value) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function escapeHtml(value) {

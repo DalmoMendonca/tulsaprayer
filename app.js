@@ -12,6 +12,7 @@ const selectedScore = document.querySelector("#selectedScore");
 const selectedPopulation = document.querySelector("#selectedPopulation");
 const selectedArea = document.querySelector("#selectedArea");
 const prayerCount = document.querySelector("#prayerCount");
+const wallPreviewCount = document.querySelector("#wallPreviewCount");
 const prayerForm = document.querySelector("#prayerForm");
 const prayerName = document.querySelector("#prayerName");
 const prayerText = document.querySelector("#prayerText");
@@ -48,12 +49,14 @@ const state = {
   tiltIndex: 0,
   viewTween: null,
   mediaRecorder: null,
+  fallbackRecorder: null,
   recordedChunks: [],
   recordedBlob: null,
   recordingStartedAt: 0,
   recordedDurationSeconds: 0,
   recordingTimer: null,
   discardingRecording: false,
+  userStoppedRecording: false,
   isSubmitting: false,
   pointerDown: null,
   panelDismissed: false,
@@ -158,7 +161,7 @@ async function init() {
   animate();
   hydratePrayers();
 
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 function normalizeAreas(geojson) {
@@ -341,6 +344,7 @@ function selectArea(id, focusForm = true, focusMap = true) {
   selectedPopulation.textContent = formatNumber(area.population);
   selectedArea.textContent = `${area.areaSqMiles.toFixed(2)} sq mi`;
   prayerCount.textContent = formatPrayerCount(prayers.length);
+  wallPreviewCount.textContent = prayers.length ? formatPrayerCount(prayers.length) : "No prayers yet";
   renderPrayerFeed(prayers);
   updateMapState();
   updateCounts();
@@ -349,7 +353,7 @@ function selectArea(id, focusForm = true, focusMap = true) {
     const centroid = projectedCentroid(area.geometry);
     animateViewTo(new THREE.Vector3(centroid.x + 2.4, 0, centroid.z + state.mapOffsetZ), 760);
   }
-  if (focusForm) prayerText.focus({ preventScroll: true });
+  if (focusForm && window.innerWidth >= 720) prayerText.focus({ preventScroll: true });
 }
 
 function updateMapState() {
@@ -487,49 +491,82 @@ async function onSubmitPrayer(event) {
 }
 
 async function toggleRecording() {
-  if (state.mediaRecorder?.state === "recording") {
+  if (state.mediaRecorder?.state === "recording" || state.fallbackRecorder) {
     stopRecording();
     return;
   }
 
-  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+  if (!navigator.mediaDevices?.getUserMedia || (!window.MediaRecorder && !window.AudioContext && !window.webkitAudioContext)) {
     setFormStatus("Audio recording is not available in this browser.", true);
     return;
   }
 
   clearRecording();
+  let stream;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+    if (!stream.getAudioTracks().length) throw new DOMException("No audio track was captured.", "NotFoundError");
     state.activeStreams = [stream];
     state.discardingRecording = false;
-    const mimeType = pickAudioMimeType();
-    state.recordedChunks = [];
-    state.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-    state.mediaRecorder.addEventListener("dataavailable", (event) => {
-      if (event.data.size) state.recordedChunks.push(event.data);
-    });
-    state.mediaRecorder.addEventListener("stop", () => finishRecording(stream));
-    state.mediaRecorder.addEventListener("error", () => {
-      stopStream(stream);
-      setFormStatus("Recording failed. Please try again.", true);
-    });
-    state.mediaRecorder.start();
+    state.userStoppedRecording = false;
     state.recordingStartedAt = Date.now();
-    recordButton.classList.add("is-recording");
-    recordButton.innerHTML = `<i data-lucide="square" aria-hidden="true"></i> Stop`;
-    discardRecording.hidden = true;
-    audioPreview.hidden = true;
-    setFormStatus("Recording... limit 5 minutes.");
-    updateRecordingTimer();
-    state.recordingTimer = window.setInterval(updateRecordingTimer, 500);
-    if (window.lucide) window.lucide.createIcons();
+    state.recordedChunks = [];
+    state.fallbackRecorder = await startFallbackRecorder(stream);
+    if (!state.fallbackRecorder && window.MediaRecorder) {
+      state.mediaRecorder = createMediaRecorder(stream);
+      state.mediaRecorder.addEventListener("dataavailable", (event) => {
+        if (event.data.size) state.recordedChunks.push(event.data);
+      });
+      state.mediaRecorder.addEventListener("stop", () => {
+        if (!state.userStoppedRecording && !state.discardingRecording && state.fallbackRecorder) {
+          state.mediaRecorder = null;
+          return;
+        }
+        window.setTimeout(() => finishRecording(stream), 0);
+      });
+      state.mediaRecorder.addEventListener("error", (event) => {
+        if (state.fallbackRecorder && !state.userStoppedRecording && !state.discardingRecording) {
+          state.mediaRecorder = null;
+          return;
+        }
+        stopStream(stream);
+        setFormStatus(microphoneErrorMessage(event.error), true);
+      });
+      state.mediaRecorder.start(1000);
+    }
   } catch (error) {
+    stopStream(stream);
     setFormStatus(microphoneErrorMessage(error), true);
+    return;
   }
+  recordButton.classList.add("is-recording");
+  recordButton.innerHTML = `<i data-lucide="square" aria-hidden="true"></i> Stop`;
+  discardRecording.hidden = true;
+  audioPreview.hidden = true;
+  setFormStatus("Recording... limit 5 minutes.");
+  updateRecordingTimer();
+  state.recordingTimer = window.setInterval(updateRecordingTimer, 500);
+  refreshIcons();
 }
 
 function stopRecording() {
-  if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+  if (state.mediaRecorder?.state === "recording") {
+    state.userStoppedRecording = true;
+    try {
+      state.mediaRecorder.requestData();
+    } catch {
+      // Some browsers do not allow requestData immediately before stopping.
+    }
+    state.mediaRecorder.stop();
+    return;
+  }
+  if (state.fallbackRecorder) finishRecording(state.activeStreams[0]);
 }
 
 function finishRecording(stream) {
@@ -539,12 +576,20 @@ function finishRecording(stream) {
   state.recordingTimer = null;
   if (state.discardingRecording) {
     state.discardingRecording = false;
+    state.userStoppedRecording = false;
     state.mediaRecorder = null;
     return;
   }
   state.recordedDurationSeconds = Math.max(1, Math.ceil((Date.now() - state.recordingStartedAt) / 1000));
   const type = state.mediaRecorder?.mimeType || "audio/webm";
   state.recordedBlob = new Blob(state.recordedChunks, { type });
+  if (!state.recordedBlob.size && state.fallbackRecorder) {
+    state.recordedBlob = state.fallbackRecorder.stop();
+  } else {
+    state.fallbackRecorder?.stop();
+  }
+  state.fallbackRecorder = null;
+  state.userStoppedRecording = false;
   if (!state.recordedBlob.size) {
     clearRecording();
     setFormStatus("No audio was captured. Please try recording again.", true);
@@ -556,7 +601,7 @@ function finishRecording(stream) {
   audioPreview.src = URL.createObjectURL(state.recordedBlob);
   audioPreview.hidden = false;
   setFormStatus("Recording ready. It will be transcribed before posting.");
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 function clearRecording() {
@@ -566,10 +611,13 @@ function clearRecording() {
   }
   state.activeStreams.forEach(stopStream);
   state.activeStreams = [];
+  state.fallbackRecorder?.stop();
+  state.fallbackRecorder = null;
   window.clearInterval(state.recordingTimer);
   state.recordingTimer = null;
   state.recordedChunks = [];
   state.recordedBlob = null;
+  state.userStoppedRecording = false;
   if (state.mediaRecorder?.state !== "recording") state.mediaRecorder = null;
   state.recordedDurationSeconds = 0;
   recordDuration.textContent = "0:00";
@@ -579,7 +627,7 @@ function clearRecording() {
   if (audioPreview.src) URL.revokeObjectURL(audioPreview.src);
   audioPreview.removeAttribute("src");
   audioPreview.hidden = true;
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 function updateRecordingTimer() {
@@ -590,11 +638,12 @@ function updateRecordingTimer() {
 
 async function serializeRecording() {
   const data = await blobToBase64(state.recordedBlob);
+  const extension = state.recordedBlob.type.includes("wav") ? "wav" : state.recordedBlob.type.includes("mp4") ? "mp4" : "webm";
   return {
     data,
     mimeType: state.recordedBlob.type || "audio/webm",
     durationSeconds: Math.min(300, state.recordedDurationSeconds || 1),
-    filename: `prayer-${Date.now()}.${state.recordedBlob.type.includes("mp4") ? "mp4" : "webm"}`,
+    filename: `prayer-${Date.now()}.${extension}`,
   };
 }
 
@@ -608,7 +657,98 @@ function blobToBase64(blob) {
 }
 
 function pickAudioMimeType() {
-  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((type) => MediaRecorder.isTypeSupported(type));
+  if (typeof MediaRecorder?.isTypeSupported !== "function") return "";
+  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function createMediaRecorder(stream) {
+  const mimeType = pickAudioMimeType();
+  if (mimeType) {
+    try {
+      return new MediaRecorder(stream, { mimeType });
+    } catch {
+      // Some browsers report support but reject the option at construction time.
+    }
+  }
+  return new MediaRecorder(stream);
+}
+
+async function startFallbackRecorder(stream) {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  const context = new AudioContext();
+  await context.resume();
+  const source = context.createMediaStreamSource(stream);
+  const processor = context.createScriptProcessor(4096, 1, 1);
+  const gain = context.createGain();
+  const chunks = [];
+  gain.gain.value = 0;
+  processor.onaudioprocess = (event) => {
+    chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+  };
+  source.connect(processor);
+  processor.connect(gain);
+  gain.connect(context.destination);
+  return {
+    stop() {
+      processor.disconnect();
+      source.disconnect();
+      gain.disconnect();
+      context.close();
+      return encodeWav(chunks, context.sampleRate);
+    },
+  };
+}
+
+function encodeWav(chunks, sampleRate) {
+  const sampleCount = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  if (!sampleCount) return new Blob([], { type: "audio/wav" });
+  const samples = downsample(chunks, sampleRate, 12000);
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  writeAscii(view, 0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeAscii(view, 8, "WAVE");
+  writeAscii(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, 12000, true);
+  view.setUint32(28, 12000 * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(view, 36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  samples.forEach((sample) => {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    offset += 2;
+  });
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function downsample(chunks, inputRate, outputRate) {
+  const ratio = Math.max(1, inputRate / outputRate);
+  const totalInput = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const output = new Float32Array(Math.floor(totalInput / ratio));
+  let chunkIndex = 0;
+  let chunkOffset = 0;
+  for (let index = 0; index < output.length; index += 1) {
+    const sourceIndex = Math.floor(index * ratio);
+    while (chunkIndex < chunks.length && sourceIndex >= chunkOffset + chunks[chunkIndex].length) {
+      chunkOffset += chunks[chunkIndex].length;
+      chunkIndex += 1;
+    }
+    output[index] = chunks[chunkIndex]?.[sourceIndex - chunkOffset] || 0;
+  }
+  return output;
+}
+
+function writeAscii(view, offset, text) {
+  for (let index = 0; index < text.length; index += 1) {
+    view.setUint8(offset + index, text.charCodeAt(index));
+  }
 }
 
 function stopStream(stream) {
@@ -619,7 +759,8 @@ function microphoneErrorMessage(error) {
   if (error?.name === "NotAllowedError" || error?.name === "SecurityError") return "Microphone access was not granted.";
   if (error?.name === "NotFoundError") return "No microphone was found on this device.";
   if (error?.name === "NotReadableError") return "The microphone is already in use by another app.";
-  return "Microphone recording is not available in this browser.";
+  if (error?.name === "NotSupportedError") return "This browser could not start an audio recording. Try updating Chrome or Safari.";
+  return `Microphone recording failed${error?.name ? ` (${error.name})` : ""}. Please try again.`;
 }
 
 function setFormStatus(message, isError = false) {
@@ -627,16 +768,27 @@ function setFormStatus(message, isError = false) {
   formStatus.classList.toggle("is-error", isError);
 }
 
+function refreshIcons() {
+  try {
+    window.lucide?.createIcons();
+  } catch {
+    // Icon hydration is cosmetic and should never interrupt prayer entry or recording.
+  }
+}
+
 function apiUrl() {
   return "/api/prayers";
 }
 
 function renderPrayerFeed(prayers) {
-  if (!prayers.length) {
-    prayerFeed.innerHTML = `<div class="empty-state">No prayers registered for this area yet.</div>`;
-    return;
-  }
-  prayerFeed.innerHTML = prayers.map(renderPrayerEntry).join("");
+  const count = prayers.length;
+  prayerFeed.innerHTML = `
+    <button class="wall-open-card" type="button" data-open-wall>
+      <span>${count ? `${formatPrayerCount(count)} registered here` : "No prayers registered here yet"}</span>
+      <strong>${count ? "Open neighborhood prayer wall" : "Open empty prayer wall"}</strong>
+    </button>
+  `;
+  prayerFeed.querySelector("[data-open-wall]").addEventListener("click", openSelectedPrayerWall);
 }
 
 function dismissPanel() {
@@ -695,7 +847,7 @@ function renderPrayerEntry(prayer) {
       <strong>${escapeHtml(prayer.name)}</strong>
       <p>${escapeHtml(prayer.text)}</p>
       ${prayer.audioUrl ? `<audio controls preload="none" src="${escapeAttribute(prayer.audioUrl)}"></audio>` : ""}
-      <time datetime="${prayer.createdAt}">${formatDate(prayer.createdAt)}</time>
+      <time datetime="${escapeAttribute(prayer.createdAt)}" title="${escapeAttribute(formatFullDate(prayer.createdAt))}">${formatDate(prayer.createdAt)}</time>
     </article>
   `;
 }
@@ -704,7 +856,7 @@ function openPrayerOverlay() {
   prayerOverlay.hidden = false;
   document.body.classList.add("overlay-open");
   closeOverlay.focus({ preventScroll: true });
-  if (window.lucide) window.lucide.createIcons();
+  refreshIcons();
 }
 
 function closePrayerOverlay() {
@@ -946,6 +1098,12 @@ function formatPrayerCount(count) {
   return `${count} ${count === 1 ? "prayer" : "prayers"}`;
 }
 
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  return `${minutes}:${String(safeSeconds % 60).padStart(2, "0")}`;
+}
+
 function formatNumber(value) {
   return new Intl.NumberFormat().format(value || 0);
 }
@@ -956,6 +1114,13 @@ function formatDate(value) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatFullDate(value) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(new Date(value));
 }
 

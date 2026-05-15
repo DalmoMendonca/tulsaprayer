@@ -1,7 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { listPrayers, createPrayer, clearArea } = require("./lib/prayer-service");
+const { listPrayers, createPrayer, clearArea, deletePrayer } = require("./lib/prayer-service");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
@@ -48,6 +48,10 @@ async function handleApi(request, response) {
   }
 
   if (request.method === "DELETE") {
+    if (body.prayerId) {
+      sendJson(response, 200, await deletePrayer(body.areaId, body.prayerId, body.password));
+      return;
+    }
     sendJson(response, 200, await clearArea(body.areaId, body.password));
     return;
   }
