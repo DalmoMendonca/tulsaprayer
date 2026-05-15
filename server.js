@@ -1,7 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { listPrayers, createPrayer, clearArea, deletePrayer } = require("./lib/prayer-service");
+const { listPrayers, createPrayer, clearArea, deletePrayer, transcribe } = require("./lib/prayer-service");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
@@ -21,6 +21,11 @@ const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (url.pathname === "/api/prayers") {
       await handleApi(request, response);
+      return;
+    }
+    if (url.pathname === "/api/transcribe" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, await transcribe(body));
       return;
     }
     await serveStatic(response, url.pathname);

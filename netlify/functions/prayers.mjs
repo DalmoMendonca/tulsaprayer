@@ -1,6 +1,6 @@
 import prayerService from "../../lib/prayer-service.js";
 
-const { listPrayers, createPrayer, clearArea, deletePrayer, getAudio } = prayerService;
+const { listPrayers, createPrayer, clearArea, deletePrayer, getAudio, transcribe } = prayerService;
 
 export default async (request) => {
   try {
@@ -22,6 +22,10 @@ export default async (request) => {
 
     const body = await parseBody(request);
 
+    if (request.method === "POST" && url.pathname === "/api/transcribe") {
+      return json(await transcribe(body));
+    }
+
     if (request.method === "POST") {
       return json(await createPrayer(body));
     }
@@ -38,7 +42,7 @@ export default async (request) => {
 };
 
 export const config = {
-  path: ["/api/prayers", "/api/prayers/audio/:id"],
+  path: ["/api/prayers", "/api/prayers/audio/:id", "/api/transcribe"],
 };
 
 async function parseBody(request) {
