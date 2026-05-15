@@ -200,6 +200,37 @@ h2 {
     opacity 180ms ease,
     transform 220ms ease;
   overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.detail-panel:hover,
+.detail-panel:focus-within {
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.detail-panel::-webkit-scrollbar,
+.overlay-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-panel::-webkit-scrollbar-track,
+.overlay-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-panel::-webkit-scrollbar-thumb,
+.overlay-content::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.detail-panel:hover::-webkit-scrollbar-thumb,
+.detail-panel:focus-within::-webkit-scrollbar-thumb,
+.overlay-content:hover::-webkit-scrollbar-thumb,
+.overlay-content:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .panel-dismissed .detail-panel {
@@ -338,45 +369,85 @@ h2 {
 
 .audio-recorder {
   display: grid;
-  grid-template-columns: auto auto minmax(3rem, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .audio-playback {
-  grid-column: 1 / -1;
+  grid-column: 3;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(54px, 1fr) auto;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   width: 100%;
-  border: 1px solid rgba(7, 152, 251, 0.22);
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.055);
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  padding: 4px 8px 4px 5px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .audio-play-button {
   display: inline-grid;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
+  border: 0;
+  border-radius: 50%;
   color: var(--ink);
-  background: rgba(7, 152, 251, 0.16);
+  background: rgba(7, 152, 251, 0.9);
   cursor: pointer;
+}
+
+.audio-play-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .audio-seek {
   width: 100%;
+  height: 4px;
+  margin: 0;
   accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.audio-seek::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.audio-seek::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px rgba(7, 152, 251, 0.16);
+  appearance: none;
+}
+
+.audio-seek::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.audio-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
 }
 
 #audioCurrent,
 #audioTotal {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
 }
@@ -387,8 +458,8 @@ h2 {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-width: 96px;
-  height: 36px;
+  min-width: 88px;
+  height: 34px;
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink);
@@ -404,7 +475,7 @@ h2 {
 }
 
 .discard-button {
-  min-width: 42px;
+  min-width: 34px;
   color: var(--muted);
 }
 
@@ -414,6 +485,10 @@ h2 {
   font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.audio-recorder:has(.audio-playback:not([hidden])) #recordDuration {
+  display: none;
 }
 
 .form-status {
@@ -609,6 +684,13 @@ h2 {
   min-height: 0;
   overflow: auto;
   padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.overlay-content:hover,
+.overlay-content:focus-within {
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 .overlay-area {
@@ -757,7 +839,7 @@ h2 {
   }
 
   .audio-recorder {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
   }
 
   .record-button,
@@ -766,6 +848,10 @@ h2 {
     height: 34px;
     padding: 0 9px;
     font-size: 0.86rem;
+  }
+
+  .audio-playback {
+    grid-column: 1 / -1;
   }
 
   .form-status {

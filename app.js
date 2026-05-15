@@ -104,6 +104,7 @@ const pointer = new THREE.Vector2();
 const mapGroup = new THREE.Group();
 const pinGroup = new THREE.Group();
 scene.add(mapGroup, pinGroup);
+const prayerHeartTexture = makePrayerHeartTexture();
 
 scene.add(new THREE.HemisphereLight(0xf9f6ec, 0x123034, 3.1));
 
@@ -240,7 +241,8 @@ function buildMap() {
 
     const centroid = projectedCentroid(area.geometry);
     const pin = makePrayerHeart();
-    pin.position.set(centroid.x, height + 0.018, centroid.z);
+    pin.userData.baseY = height + 0.048;
+    pin.position.set(centroid.x, pin.userData.baseY, centroid.z);
     pin.visible = getPrayers(area.id).length > 0;
     pinGroup.add(pin);
 
@@ -293,25 +295,49 @@ function makeOutline(polygon, height) {
 }
 
 function makePrayerHeart() {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, -0.13);
-  shape.bezierCurveTo(-0.42, -0.34, -0.58, 0.12, -0.3, 0.28);
-  shape.bezierCurveTo(-0.14, 0.37, 0, 0.26, 0, 0.12);
-  shape.bezierCurveTo(0, 0.26, 0.14, 0.37, 0.3, 0.28);
-  shape.bezierCurveTo(0.58, 0.12, 0.42, -0.34, 0, -0.13);
-  const heart = new THREE.Mesh(
-    new THREE.ShapeGeometry(shape, 32),
-    new THREE.MeshStandardMaterial({
-      color: 0x0798fb,
-      emissive: 0x0798fb,
-      emissiveIntensity: 0.65,
-      roughness: 0.42,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
+  const heart = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: prayerHeartTexture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
     }),
   );
-  heart.rotation.x = -Math.PI / 2;
+  heart.scale.set(0.62, 0.62, 1);
+  heart.renderOrder = 20;
   return heart;
+}
+
+function makePrayerHeartTexture() {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = 192;
+  textureCanvas.height = 192;
+  const context = textureCanvas.getContext("2d");
+  context.clearRect(0, 0, 192, 192);
+  context.save();
+  context.translate(96, 98);
+  context.scale(4.85, 4.85);
+  context.beginPath();
+  context.moveTo(0, 19);
+  context.bezierCurveTo(-18, 8, -27, -3, -25, -15);
+  context.bezierCurveTo(-23, -27, -9, -31, 0, -19);
+  context.bezierCurveTo(9, -31, 23, -27, 25, -15);
+  context.bezierCurveTo(27, -3, 18, 8, 0, 19);
+  context.closePath();
+  context.shadowColor = "rgba(0, 0, 0, 0.34)";
+  context.shadowBlur = 5;
+  context.shadowOffsetY = 2;
+  context.fillStyle = "#0798fb";
+  context.fill();
+  context.shadowColor = "transparent";
+  context.lineWidth = 1.7;
+  context.strokeStyle = "rgba(255, 255, 255, 0.92)";
+  context.stroke();
+  context.restore();
+  const texture = new THREE.CanvasTexture(textureCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
 }
 
 function addCardinalMarkers() {
@@ -395,7 +421,7 @@ function updateCounts() {
   state.pins.forEach((pin, id) => {
     const count = getPrayers(id).length;
     pin.visible = count > 0;
-    pin.scale.setScalar(0.7 + Math.min(count, 18) * 0.05);
+    pin.scale.set(0.62, 0.62, 1);
   });
   updateAreaColors();
 }
@@ -1129,10 +1155,7 @@ function animate() {
   const time = performance.now() * 0.001;
   updateViewTween();
   updateAreaLift(time);
-  state.pins.forEach((pin, id) => {
-    if (!pin.visible) return;
-    pin.material.emissiveIntensity = 0.55 + Math.sin(time * 2.4 + id.length) * 0.14;
-  });
+  updatePrayerMarkers(time);
   controls.update();
   clampControlsTarget();
   renderer.render(scene, camera);
@@ -1158,6 +1181,18 @@ function updateAreaLift(time) {
     const selectedPulse = id === state.selectedId ? Math.sin(time * 3.2) * 0.035 : 0;
     group.userData.lift += (group.userData.targetLift - group.userData.lift) * 0.14;
     group.position.y = group.userData.lift + selectedPulse;
+  });
+}
+
+function updatePrayerMarkers(time) {
+  state.pins.forEach((pin, id) => {
+    if (!pin.visible) return;
+    const areaGroup = state.meshes.get(id);
+    const lift = areaGroup?.position.y || 0;
+    const selected = id === state.selectedId;
+    const size = selected ? 0.76 + Math.sin(time * 3.2) * 0.018 : 0.62;
+    pin.position.y = pin.userData.baseY + lift + 0.018;
+    pin.scale.set(size, size, 1);
   });
 }
 
