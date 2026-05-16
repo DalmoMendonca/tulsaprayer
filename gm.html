@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gamemaster — Tulsa Prayer Map</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./gm.css" />
+  </head>
+  <body>
+    <main class="gm-shell">
+      <header class="gm-header">
+        <div class="gm-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <p>Tulsa Prayer Map</p>
+            <h1>Gamemaster</h1>
+          </div>
+        </div>
+        <a href="/" class="gm-back-link">
+          <i data-lucide="arrow-left" aria-hidden="true"></i>
+          Back to Map
+        </a>
+      </header>
+
+      <section class="gm-controls" aria-label="Neighborhood filters">
+        <div class="gm-control-row">
+          <button id="selectAll" type="button">Select All</button>
+          <button id="selectNone" type="button">Clear All</button>
+          <input id="searchAreas" type="text" placeholder="Filter neighborhoods..." aria-label="Filter neighborhoods" />
+          <span id="areaCount" class="gm-count"></span>
+        </div>
+        <div id="toggleList" class="gm-toggle-list" role="group" aria-label="Toggle neighborhoods"></div>
+      </section>
+
+      <section class="gm-table-wrapper" aria-label="Neighborhood comparison">
+        <table id="comparisonTable" class="gm-table">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </section>
+
+      <p class="gm-hint">Click a stat label to sort columns. Winners highlighted in gold.</p>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="./gm.js"></script>
+  </body>
+</html>

@@ -1,0 +1,484 @@
+html,
+body {
+  overflow: visible;
+  height: auto;
+}
+
+.gm-shell {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100dvh;
+  padding: 16px;
+  gap: 12px;
+  background:
+    radial-gradient(circle at 28% 8%, rgba(7, 152, 251, 0.09), transparent 32rem),
+    radial-gradient(circle at 72% 82%, rgba(104, 214, 210, 0.06), transparent 28rem),
+    linear-gradient(145deg, #081315, #05090a);
+}
+
+/* ── Header ── */
+
+.gm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-strong);
+  box-shadow: 0 18px 46px var(--shadow);
+}
+
+.gm-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gm-brand p {
+  margin: 0 0 3px;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gm-brand h1 {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.gm-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.055);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: border-color 200ms;
+}
+
+.gm-back-link:hover {
+  border-color: var(--gold);
+}
+
+.gm-back-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Controls ── */
+
+.gm-controls {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-strong);
+  box-shadow: 0 12px 32px var(--shadow);
+}
+
+.gm-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.gm-control-row button {
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: all 200ms;
+}
+
+.gm-control-row button:hover {
+  border-color: var(--gold);
+  background: rgba(255, 179, 2, 0.1);
+}
+
+.gm-control-row input {
+  height: 32px;
+  min-width: 160px;
+  flex: 1;
+  max-width: 260px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  font: inherit;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.gm-control-row input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(7, 152, 251, 0.16);
+}
+
+.gm-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Toggle chips ── */
+
+.gm-toggle-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.gm-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 13px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 180ms ease;
+}
+
+.gm-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.gm-chip.is-active {
+  border-color: rgba(7, 152, 251, 0.55);
+  color: #fff;
+  background: rgba(7, 152, 251, 0.16);
+}
+
+.gm-chip.is-active:hover {
+  background: rgba(7, 152, 251, 0.24);
+}
+
+/* ── Table wrapper ── */
+
+.gm-table-wrapper {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-strong);
+  box-shadow: 0 18px 46px var(--shadow);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.gm-table-wrapper::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.gm-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gm-table-wrapper::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Table ── */
+
+.gm-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+}
+
+.gm-table th,
+.gm-table td {
+  padding: 9px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Sticky header row */
+.gm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(8, 13, 15, 0.98);
+  backdrop-filter: blur(8px);
+}
+
+/* Sticky first column */
+.gm-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: rgba(8, 13, 15, 0.98);
+  border-right: 1px solid var(--line);
+  min-width: 138px;
+}
+
+/* Corner cell (sticky both ways) */
+.gm-table thead .gm-sticky-col {
+  z-index: 5;
+}
+
+/* ── Area headers ── */
+
+.gm-area-header {
+  text-align: center;
+  min-width: 108px;
+  vertical-align: bottom;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gm-area-name {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 850;
+  color: var(--ink);
+}
+
+.gm-area-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.gm-area-meta .gm-prayer-count {
+  color: var(--cyan);
+}
+
+.gm-area-meta .gm-win-count {
+  color: var(--gold);
+}
+
+/* Champion column header */
+.gm-area-header.is-champion {
+  background: rgba(255, 179, 2, 0.06);
+}
+
+.gm-area-header.is-champion .gm-area-name {
+  color: var(--gold);
+}
+
+/* ── Stat label cells ── */
+
+.gm-label-cell {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+  color: var(--muted);
+  transition: color 180ms;
+}
+
+.gm-label-cell:hover {
+  color: var(--ink);
+}
+
+.gm-label-inner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gm-stat-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.gm-sort-arrow {
+  margin-left: auto;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+/* ── Data cells ── */
+
+.gm-cell {
+  position: relative;
+  text-align: right;
+  min-width: 108px;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.gm-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(7, 152, 251, 0.1);
+  border-radius: 0 3px 3px 0;
+  transition: width 360ms ease;
+  pointer-events: none;
+}
+
+.gm-value {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-crown {
+  position: relative;
+  z-index: 1;
+  margin-left: 4px;
+  color: var(--gold);
+  font-size: 0.88rem;
+  animation: crown-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes crown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Winner highlight */
+.gm-cell.is-winner {
+  background: rgba(255, 179, 2, 0.07);
+}
+
+.gm-cell.is-winner .gm-bar {
+  background: rgba(255, 179, 2, 0.14);
+}
+
+.gm-cell.is-winner .gm-value {
+  color: var(--gold);
+  font-weight: 850;
+}
+
+/* Top-3 rank badge */
+.gm-cell.is-top3::before {
+  content: attr(data-rank);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  z-index: 1;
+  font-size: 0.56rem;
+  font-weight: 850;
+  color: rgba(7, 152, 251, 0.45);
+  pointer-events: none;
+}
+
+.gm-cell.is-winner::before {
+  color: rgba(255, 179, 2, 0.65);
+}
+
+/* ── Row hover ── */
+
+.gm-stat-row {
+  transition: background 120ms;
+}
+
+.gm-stat-row:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.gm-stat-row:hover .gm-sticky-col {
+  background: rgba(10, 18, 20, 0.98);
+  color: var(--ink);
+}
+
+/* ── Empty state ── */
+
+.gm-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* ── Hint ── */
+
+.gm-hint {
+  margin: 0;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: center;
+  opacity: 0.6;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 720px) {
+  .gm-shell {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .gm-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .gm-brand h1 {
+    font-size: 1.4rem;
+  }
+
+  .gm-controls {
+    padding: 10px;
+  }
+
+  .gm-control-row {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .gm-control-row input {
+    max-width: none;
+  }
+
+  .gm-sticky-col {
+    min-width: 96px;
+  }
+
+  .gm-cell,
+  .gm-area-header {
+    min-width: 88px;
+  }
+
+  .gm-table th,
+  .gm-table td {
+    padding: 7px 8px;
+    font-size: 0.74rem;
+  }
+
+  .gm-chip {
+    height: 24px;
+    padding: 0 7px;
+    font-size: 0.66rem;
+  }
+}

@@ -79,7 +79,7 @@ async function handleApi(request, response) {
 }
 
 async function serveStatic(response, pathname) {
-  const relativePath = pathname === "/" ? "index.html" : pathname === "/admin" ? "admin.html" : pathname.slice(1);
+  const relativePath = pathname === "/" ? "index.html" : pathname === "/admin" ? "admin.html" : pathname === "/g" ? "gm.html" : pathname.slice(1);
   const filePath = path.resolve(root, relativePath);
 
   if (!filePath.startsWith(root)) {
